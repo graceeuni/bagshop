@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bag Shop - 프리미엄 가방 쇼핑몰</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- 네비게이션 메뉴 -->
+    <header class="header">
+        <nav class="navbar">
+            <div class="nav-container">
+                <div class="nav-logo">
+                    <h1>BAG SHOP</h1>
+                </div>
+                <ul class="nav-menu">
+                    <li><a href="#home">홈</a></li>
+                    <li><a href="#featured">MD추천</a></li>
+                    <li><a href="#popular">인기상품</a></li>
+                    <li><a href="#new">신상품</a></li>
+                    <li><a href="#sale">세일</a></li>
+                    <li><a href="#contact">문의</a></li>
+                </ul>
+                <div class="nav-icons">
+                    <i class="fas fa-search"></i>
+                    <i class="fas fa-user"></i>
+                    <i class="fas fa-shopping-cart"></i>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <!-- MD 추천 상품 섹션 -->
+        <section id="featured" class="featured-section">
+            <div class="container">
+                <h2 class="section-title">MD's Pick</h2>
+                <div class="featured-product">
+                    <div class="product-3d">
+                        <div id="threejs-container"></div>
+                    </div>
+                    <div class="product-info">
+                        <h3 class="product-name">프리미엄 레더 백팩</h3>
+                        <p class="product-description">최고급 가죽으로 제작된 실용적인 백팩으로, 비즈니스와 일상생활 모두에 완벽한 선택입니다.</p>
+                        <div class="product-price">
+                            <span class="price">₩299,000</span>
+                            <span class="original-price">₩399,000</span>
+                        </div>
+                        <div class="color-options">
+                            <h4>색상 선택</h4>
+                            <div class="color-buttons">
+                                <button class="color-btn active" data-color="#8B4513" style="background-color: #8B4513;"></button>
+                                <button class="color-btn" data-color="#000000" style="background-color: #000000;"></button>
+                                <button class="color-btn" data-color="#4169E1" style="background-color: #4169E1;"></button>
+                                <button class="color-btn" data-color="#808080" style="background-color: #808080;"></button>
+                            </div>
+                        </div>
+                        <button class="add-to-cart">장바구니에 담기</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 인기상품 목록 섹션 -->
+        <section id="popular" class="popular-section">
+            <div class="container">
+                <h2 class="section-title">인기상품</h2>
+                <div class="slider-container">
+                    <div class="slider-wrapper">
+                        <button class="slider-btn prev-btn"><i class="fas fa-chevron-left"></i></button>
+                        <div class="product-slider">
+                            <div class="product-card">
+                                <div class="product-image">
+                                    <img src="https://via.placeholder.com/300x300/8B4513/FFFFFF?text=Bag+1" alt="가방 1">
+                                </div>
+                                <div class="product-details">
+                                    <h4>클래식 토트백</h4>
+                                    <p class="price">₩189,000</p>
+                                </div>
+                            </div>
+                            <div class="product-card">
+                                <div class="product-image">
+                                    <img src="https://via.placeholder.com/300x300/000000/FFFFFF?text=Bag+2" alt="가방 2">
+                                </div>
+                                <div class="product-details">
+                                    <h4>미니멀 숄더백</h4>
+                                    <p class="price">₩159,000</p>
+                                </div>
+                            </div>
+                            <div class="product-card">
+                                <div class="product-image">
+                                    <img src="https://via.placeholder.com/300x300/4169E1/FFFFFF?text=Bag+3" alt="가방 3">
+                                </div>
+                                <div class="product-details">
+                                    <h4>스포츠 백팩</h4>
+                                    <p class="price">₩129,000</p>
+                                </div>
+                            </div>
+                            <div class="product-card">
+                                <div class="product-image">
+                                    <img src="https://via.placeholder.com/300x300/808080/FFFFFF?text=Bag+4" alt="가방 4">
+                                </div>
+                                <div class="product-details">
+                                    <h4>비즈니스 서류가방</h4>
+                                    <p class="price">₩259,000</p>
+                                </div>
+                            </div>
+                            <div class="product-card">
+                                <div class="product-image">
+                                    <img src="https://via.placeholder.com/300x300/D2691E/FFFFFF?text=Bag+5" alt="가방 5">
+                                </div>
+                                <div class="product-details">
+                                    <h4>캔버스 메신저백</h4>
+                                    <p class="price">₩99,000</p>
+                                </div>
+                            </div>
+                            <div class="product-card">
+                                <div class="product-image">
+                                    <img src="https://via.placeholder.com/300x300/8B008B/FFFFFF?text=Bag+6" alt="가방 6">
+                                </div>
+                                <div class="product-details">
+                                    <h4>레이디 핸드백</h4>
+                                    <p class="price">₩329,000</p>
+                                </div>
+                            </div>
+                        </div>
+                        <button class="slider-btn next-btn"><i class="fas fa-chevron-right"></i></button>
+                    </div>
+                    <button class="more-btn">더보기 <i class="fas fa-arrow-right"></i></button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>BAG SHOP</h3>
+                    <p>프리미엄 가방 전문 쇼핑몰</p>
+                </div>
+                <div class="footer-section">
+                    <h4>고객센터</h4>
+                    <p>전화: 1544-1234</p>
+                    <p>이메일: help@bagshop.com</p>
+                </div>
+                <div class="footer-section">
+                    <h4>배송안내</h4>
+                    <p>무료 배송 (3만원 이상)</p>
+                    <p>평일 오후 2시까지 주문 시 당일발송</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Three.js 라이브러리 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
