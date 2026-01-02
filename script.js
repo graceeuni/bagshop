@@ -1,221 +1,374 @@
-// Three.js 3D 백팩 모델링 및 인터랙션
-let scene, camera, renderer, bag, controls;
-let currentColor = '#8B4513';
-let gltfModel = null;
+// Three.js 3D 캐러셀 시스템
+let scenes = {};
+let cameras = {};
+let renderers = {};
+let models = {};
+let controls = {};
+let currentColors = {
+    bagpack: '#8B4513',
+    crossbag: '#8B4513'
+};
 let originalMaterials = new Map();
 
-// Three.js 초기화
-function initThreeJS() {
-    const container = document.getElementById('threejs-container');
-    if (!container) return;
+// 3D 캐러셀 클래스
+class Carousel3D {
+    constructor() {
+        this.currentIndex = 0;
+        this.totalSlides = 2;
+        this.isAnimating = false;
+        this.autoPlayInterval = null;
+        this.init();
+    }
 
-    // 씬 생성
-    scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xf0f0f0);
+    init() {
+        this.setupEventListeners();
+        this.initThreeJS();
+        this.startAutoPlay();
+    }
 
-    // 카메라 설정
-    camera = new THREE.PerspectiveCamera(
-        75,
-        container.clientWidth / container.clientHeight,
-        0.1,
-        1000
-    );
-    camera.position.set(0, 0, 5);
-
-    // 렌더러 설정
-    renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(container.clientWidth, container.clientHeight);
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    renderer.outputEncoding = THREE.sRGBEncoding;
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.0;
-    container.appendChild(renderer.domElement);
-
-    // OrbitControls 설정
-    controls = new THREE.OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.05;
-    controls.enableZoom = true;
-    controls.minDistance = 2;
-    controls.maxDistance = 10;
-    controls.maxPolarAngle = Math.PI / 2;
-    controls.autoRotate = true;
-    controls.autoRotateSpeed = 2.0;
-
-    // 향상된 조명 설정
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
-    scene.add(ambientLight);
-
-    // 메인 조명 (부드러운 그림자)
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    directionalLight.position.set(5, 5, 5);
-    directionalLight.castShadow = true;
-    directionalLight.shadow.mapSize.width = 2048;
-    directionalLight.shadow.mapSize.height = 2048;
-    directionalLight.shadow.camera.near = 0.5;
-    directionalLight.shadow.camera.far = 50;
-    directionalLight.shadow.camera.left = -10;
-    directionalLight.shadow.camera.right = 10;
-    directionalLight.shadow.camera.top = 10;
-    directionalLight.shadow.camera.bottom = -10;
-    directionalLight.shadow.bias = -0.0001;
-    scene.add(directionalLight);
-
-    // 보조 조명 (상단)
-    const topLight = new THREE.DirectionalLight(0xffffff, 0.3);
-    topLight.position.set(0, 10, 0);
-    scene.add(topLight);
-
-    // 측면 조명 (좌측)
-    const sideLight1 = new THREE.DirectionalLight(0xffffff, 0.2);
-    sideLight1.position.set(-5, 2, 0);
-    scene.add(sideLight1);
-
-    // 측면 조명 (우측)
-    const sideLight2 = new THREE.DirectionalLight(0xffffff, 0.2);
-    sideLight2.position.set(5, 2, 0);
-    scene.add(sideLight2);
-
-    // 후광 효과 (배경 조명)
-    const rimLight = new THREE.DirectionalLight(0xffffff, 0.4);
-    rimLight.position.set(-5, 0, -5);
-    scene.add(rimLight);
-
-    // GLB 모델 로드
-    loadGLBModel();
-
-    // 애니메이션 루프
-    animate();
-
-    // 윈도우 리사이즈 처리
-    window.addEventListener('resize', onWindowResize);
-}
-
-// GLB 모델 로드 함수
-function loadGLBModel() {
-    const loader = new THREE.GLTFLoader();
-    
-    loader.load(
-        'bagpack.glb',
-        function (gltf) {
-            gltfModel = gltf.scene;
-            
-            // 모델 크기 조절
-            gltfModel.scale.set(1.5, 1.5, 1.5);
-            
-            // 모델 위치 조절
-            gltfModel.position.set(0, 0, 0);
-            
-            // 모델 회전 조절 (필요시)
-            gltfModel.rotation.set(0, 0, 0);
-            
-            // 그림자 설정
-            gltfModel.traverse(function (child) {
-                if (child.isMesh) {
-                    child.castShadow = true;
-                    child.receiveShadow = true;
-                    
-                    // 원본 재질 저장
-                    originalMaterials.set(child.uuid, child.material.clone());
+    setupEventListeners() {
+        // 캐러셀 버튼
+        document.querySelectorAll('.carousel-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                if (btn.classList.contains('prev-btn')) {
+                    this.prevSlide();
+                } else {
+                    this.nextSlide();
                 }
             });
-            
-            scene.add(gltfModel);
-            bag = gltfModel;
-            
-            console.log('GLB 모델이 성공적으로 로드되었습니다.');
-        },
-        function (xhr) {
-            console.log((xhr.loaded / xhr.total * 100) + '% 로드됨');
-        },
-        function (error) {
-            console.error('GLB 모델 로드 중 오류 발생:', error);
-            // GLB 모델 로드 실패시 기본 모델 생성
-            createFallbackModel();
-        }
-    );
-}
+        });
 
-// 폴백 모델 (GLB 로드 실패시 사용)
-function createFallbackModel() {
-    console.log('폴백 모델을 생성합니다.');
-    createBagModel();
-}
+        // 인디케이터 버튼
+        document.querySelectorAll('.indicator').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const slideIndex = parseInt(btn.dataset.slide);
+                this.goToSlide(slideIndex);
+            });
+        });
 
-// 가방 색상 변경 (GLB 모델용)
-function changeBagColor(color) {
-    if (!bag) return;
-    
-    currentColor = color;
-    
-    if (gltfModel) {
-        // GLB 모델의 색상 변경
-        gltfModel.traverse(function (child) {
-            if (child.isMesh && child.material) {
-                // 메인 백팩 본체 색상 변경 (메인 재질만)
-                if (child.material.name && 
-                    (child.material.name.toLowerCase().includes('main') || 
-                     child.material.name.toLowerCase().includes('body') ||
-                     child.material.name.toLowerCase().includes('fabric'))) {
-                    
-                    if (Array.isArray(child.material)) {
-                        child.material.forEach(material => {
-                            material.color.set(color);
-                        });
-                    } else {
-                        child.material.color.set(color);
-                    }
+        // 터치 지원
+        this.setupTouchSupport();
+    }
+
+    setupTouchSupport() {
+        const carousel = document.querySelector('.featured-carousel');
+        let startX = 0;
+        let endX = 0;
+
+        carousel.addEventListener('touchstart', (e) => {
+            startX = e.touches[0].clientX;
+        });
+
+        carousel.addEventListener('touchend', (e) => {
+            endX = e.changedTouches[0].clientX;
+            const diff = startX - endX;
+
+            if (Math.abs(diff) > 50) {
+                if (diff > 0) {
+                    this.nextSlide();
+                } else {
+                    this.prevSlide();
                 }
+            }
+        });
+    }
+
+    initThreeJS() {
+        // 백팩 모델 초기화
+        this.initModel('bagpack');
+        // 크로스백 모델 초기화
+        this.initModel('crossbag');
+    }
+
+    initModel(modelName) {
+        const container = document.getElementById(`threejs-container-${modelName}`);
+        if (!container) return;
+
+        // 씬 생성
+        scenes[modelName] = new THREE.Scene();
+        scenes[modelName].background = new THREE.Color(0xf0f0f0);
+
+        // 카메라 설정
+        cameras[modelName] = new THREE.PerspectiveCamera(
+            75,
+            container.clientWidth / container.clientHeight,
+            0.1,
+            1000
+        );
+        cameras[modelName].position.set(0, 0, 4);
+
+        // 렌더러 설정
+        renderers[modelName] = new THREE.WebGLRenderer({ antialias: true });
+        renderers[modelName].setSize(container.clientWidth, container.clientHeight);
+        renderers[modelName].shadowMap.enabled = true;
+        renderers[modelName].shadowMap.type = THREE.PCFSoftShadowMap;
+        renderers[modelName].outputEncoding = THREE.sRGBEncoding;
+        renderers[modelName].toneMapping = THREE.ACESFilmicToneMapping;
+        renderers[modelName].toneMappingExposure = 1.0;
+        container.appendChild(renderers[modelName].domElement);
+
+        // OrbitControls 설정
+        controls[modelName] = new THREE.OrbitControls(cameras[modelName], renderers[modelName].domElement);
+        controls[modelName].enableDamping = true;
+        controls[modelName].dampingFactor = 0.05;
+        controls[modelName].enableZoom = true;
+        controls[modelName].minDistance = 2;
+        controls[modelName].maxDistance = 10;
+        controls[modelName].maxPolarAngle = Math.PI / 2;
+        controls[modelName].autoRotate = true;
+        controls[modelName].autoRotateSpeed = 2.0;
+
+        // 조명 설정
+        this.setupLighting(scenes[modelName]);
+
+        // GLB 모델 로드
+        this.loadGLBModel(modelName);
+
+        // 애니메이션 루프
+        this.animate(modelName);
+
+        // 윈도우 리사이즈 처리
+        window.addEventListener('resize', () => this.onWindowResize(modelName));
+    }
+
+    setupLighting(scene) {
+        // 환경광
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+        scene.add(ambientLight);
+
+        // 메인 조명
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(5, 5, 5);
+        directionalLight.castShadow = true;
+        directionalLight.shadow.mapSize.width = 2048;
+        directionalLight.shadow.mapSize.height = 2048;
+        directionalLight.shadow.camera.near = 0.5;
+        directionalLight.shadow.camera.far = 50;
+        directionalLight.shadow.camera.left = -10;
+        directionalLight.shadow.camera.right = 10;
+        directionalLight.shadow.camera.top = 10;
+        directionalLight.shadow.camera.bottom = -10;
+        directionalLight.shadow.bias = -0.0001;
+        scene.add(directionalLight);
+
+        // 보조 조명
+        const topLight = new THREE.DirectionalLight(0xffffff, 0.3);
+        topLight.position.set(0, 10, 0);
+        scene.add(topLight);
+
+        const sideLight1 = new THREE.DirectionalLight(0xffffff, 0.2);
+        sideLight1.position.set(-5, 2, 0);
+        scene.add(sideLight1);
+
+        const sideLight2 = new THREE.DirectionalLight(0xffffff, 0.2);
+        sideLight2.position.set(5, 2, 0);
+        scene.add(sideLight2);
+
+        const rimLight = new THREE.DirectionalLight(0xffffff, 0.4);
+        rimLight.position.set(-5, 0, -5);
+        scene.add(rimLight);
+    }
+
+    loadGLBModel(modelName) {
+        const loader = new THREE.GLTFLoader();
+        const modelFile = modelName === 'bagpack' ? 'bagpack.glb' : 'crossbag.glb';
+        
+        loader.load(
+            modelFile,
+            (gltf) => {
+                models[modelName] = gltf.scene;
                 
-                // 포켓 색상 변경
-                if (child.material.name && 
-                    child.material.name.toLowerCase().includes('pocket')) {
+                // 모델 크기 조절
+                models[modelName].scale.set(2.0, 2.0, 2.0);
+                models[modelName].position.set(0, 0, 0);
+                
+                // 그림자 설정
+                models[modelName].traverse(function (child) {
+                    if (child.isMesh) {
+                        child.castShadow = true;
+                        child.receiveShadow = true;
+                        originalMaterials.set(`${modelName}-${child.uuid}`, child.material.clone());
+                    }
+                });
+                
+                scenes[modelName].add(models[modelName]);
+                console.log(`${modelName} 모델이 성공적으로 로드되었습니다.`);
+            },
+            (xhr) => {
+                console.log(`${modelName}: ${(xhr.loaded / xhr.total * 100)}% 로드됨`);
+            },
+            (error) => {
+                console.error(`${modelName} 모델 로드 중 오류 발생:`, error);
+                // 폴백 모델 생성
+                this.createFallbackModel(modelName);
+            }
+        );
+    }
+
+    createFallbackModel(modelName) {
+        console.log(`${modelName} 폴백 모델을 생성합니다.`);
+        // 간단한 박스 모델 생성
+        const geometry = new THREE.BoxGeometry(2, 2.5, 1);
+        const material = new THREE.MeshPhongMaterial({ 
+            color: currentColors[modelName],
+            shininess: 30
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        
+        models[modelName] = new THREE.Group();
+        models[modelName].add(mesh);
+        scenes[modelName].add(models[modelName]);
+    }
+
+    animate(modelName) {
+        const render = () => {
+            requestAnimationFrame(render);
+            
+            if (controls[modelName]) {
+                controls[modelName].update();
+            }
+            
+            if (renderers[modelName] && scenes[modelName] && cameras[modelName]) {
+                renderers[modelName].render(scenes[modelName], cameras[modelName]);
+            }
+        };
+        render();
+    }
+
+    onWindowResize(modelName) {
+        const container = document.getElementById(`threejs-container-${modelName}`);
+        if (!container) return;
+        
+        if (cameras[modelName] && renderers[modelName]) {
+            cameras[modelName].aspect = container.clientWidth / container.clientHeight;
+            cameras[modelName].updateProjectionMatrix();
+            renderers[modelName].setSize(container.clientWidth, container.clientHeight);
+            
+            if (controls[modelName]) {
+                controls[modelName].update();
+            }
+        }
+    }
+
+    prevSlide() {
+        if (this.isAnimating) return;
+        this.currentIndex = (this.currentIndex - 1 + this.totalSlides) % this.totalSlides;
+        this.updateCarousel();
+    }
+
+    nextSlide() {
+        if (this.isAnimating) return;
+        this.currentIndex = (this.currentIndex + 1) % this.totalSlides;
+        this.updateCarousel();
+    }
+
+    goToSlide(index) {
+        if (this.isAnimating || index === this.currentIndex) return;
+        this.currentIndex = index;
+        this.updateCarousel();
+    }
+
+    updateCarousel() {
+        this.isAnimating = true;
+        
+        // 슬라이드 업데이트
+        const slides = document.querySelectorAll('.carousel-slide');
+        const indicators = document.querySelectorAll('.indicator');
+        
+        slides.forEach((slide, index) => {
+            slide.classList.toggle('active', index === this.currentIndex);
+        });
+        
+        indicators.forEach((indicator, index) => {
+            indicator.classList.toggle('active', index === this.currentIndex);
+        });
+        
+        // 슬라이더 위치 업데이트
+        const wrapper = document.querySelector('.carousel-wrapper');
+        wrapper.style.transform = `translateX(-${this.currentIndex * 100}%)`;
+        
+        // 활성 모델의 컨트롤러 활성화
+        this.updateActiveControls();
+        
+        setTimeout(() => {
+            this.isAnimating = false;
+        }, 500);
+        
+        // 오토플레이 재설정
+        this.resetAutoPlay();
+    }
+
+    updateActiveControls() {
+        const activeSlide = document.querySelector('.carousel-slide.active');
+        const modelName = activeSlide.dataset.model;
+        
+        // 해당 모델의 컨트롤러만 활성화
+        Object.keys(controls).forEach(key => {
+            if (controls[key]) {
+                controls[key].enabled = (key === modelName);
+            }
+        });
+    }
+
+    startAutoPlay() {
+        this.autoPlayInterval = setInterval(() => {
+            this.nextSlide();
+        }, 5000);
+    }
+
+    stopAutoPlay() {
+        if (this.autoPlayInterval) {
+            clearInterval(this.autoPlayInterval);
+            this.autoPlayInterval = null;
+        }
+    }
+
+    resetAutoPlay() {
+        this.stopAutoPlay();
+        this.startAutoPlay();
+    }
+
+    // 색상 변경 기능
+    changeModelColor(modelName, color) {
+        if (!models[modelName]) return;
+        
+        currentColors[modelName] = color;
+        
+        if (models[modelName] && models[modelName].traverse) {
+            models[modelName].traverse(function (child) {
+                if (child.isMesh && child.material) {
+                    // 메인 백팩 본체 색상 변경
+                    if (child.material.name && 
+                        (child.material.name.toLowerCase().includes('main') || 
+                         child.material.name.toLowerCase().includes('body') ||
+                         child.material.name.toLowerCase().includes('fabric'))) {
+                        
+                        if (Array.isArray(child.material)) {
+                            child.material.forEach(material => {
+                                material.color.set(color);
+                            });
+                        } else {
+                            child.material.color.set(color);
+                        }
+                    }
                     
-                    if (Array.isArray(child.material)) {
-                        child.material.forEach(material => {
-                            material.color.set(color);
-                        });
-                    } else {
-                        child.material.color.set(color);
+                    // 포켓 색상 변경
+                    if (child.material.name && 
+                        child.material.name.toLowerCase().includes('pocket')) {
+                        
+                        if (Array.isArray(child.material)) {
+                            child.material.forEach(material => {
+                                material.color.set(color);
+                            });
+                        } else {
+                            child.material.color.set(color);
+                        }
                     }
                 }
-            }
-        });
-    } else {
-        // 폴백 모델의 색상 변경
-        bag.children.forEach((child, index) => {
-            if (index === 0 || index === 3) { // 본체와 포켓
-                child.material.color.set(color);
-            }
-        });
-    }
-}
-
-// 애니메이션 루프 - OrbitControls용
-function animate() {
-    requestAnimationFrame(animate);
-    
-    // OrbitControls 업데이트
-    if (controls) {
-        controls.update();
-    }
-    
-    renderer.render(scene, camera);
-}
-
-// 윈도우 리사이즈 처리
-function onWindowResize() {
-    const container = document.getElementById('threejs-container');
-    if (!container) return;
-    
-    camera.aspect = container.clientWidth / container.clientHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(container.clientWidth, container.clientHeight);
-    
-    // OrbitControls 업데이트
-    if (controls) {
-        controls.update();
+            });
+        }
     }
 }
 
@@ -292,25 +445,33 @@ function initColorOptions() {
     
     colorButtons.forEach(btn => {
         btn.addEventListener('click', function() {
-            // 활성 상태 제거
-            colorButtons.forEach(b => b.classList.remove('active'));
+            const modelName = this.dataset.model;
+            const color = this.dataset.color;
+            
+            // 활성 상태 제거 (해당 모델의 버튼만)
+            document.querySelectorAll(`.color-btn[data-model="${modelName}"]`).forEach(b => {
+                b.classList.remove('active');
+            });
             
             // 현재 버튼 활성화
             this.classList.add('active');
             
-            // 가방 색상 변경
-            const color = this.dataset.color;
-            changeBagColor(color);
+            // 해당 모델의 색상 변경
+            if (window.carousel3D) {
+                window.carousel3D.changeModelColor(modelName, color);
+            }
         });
     });
 }
 
 // 장바구니 기능
 function initCartFunctionality() {
-    const addToCartBtn = document.querySelector('.add-to-cart');
+    const addToCartBtns = document.querySelectorAll('.add-to-cart');
     
-    if (addToCartBtn) {
-        addToCartBtn.addEventListener('click', function() {
+    addToCartBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const productName = this.dataset.product;
+            
             // 장바구니에 상품 추가 시뮬레이션
             this.textContent = '장바구니에 추가됨!';
             this.style.background = '#27ae60';
@@ -334,7 +495,7 @@ function initCartFunctionality() {
                 }, 1000);
             }
         });
-    }
+    });
 }
 
 // 더보기 버튼 기능
@@ -352,11 +513,11 @@ function initMoreButton() {
                 newCard.className = 'product-card';
                 newCard.innerHTML = `
                     <div class="product-image">
-                        <img src="https://via.placeholder.com/300x300/${this.getRandomColor()}/FFFFFF?text=Bag+${currentCards + i}" alt="가방 ${currentCards + i}">
+                        <img src="https://via.placeholder.com/300x300/${getRandomColor()}/FFFFFF?text=Bag+${currentCards + i}" alt="가방 ${currentCards + i}">
                     </div>
                     <div class="product-details">
                         <h4>새로운 상품 ${currentCards + i}</h4>
-                        <p class="price">₩${this.getRandomPrice()}</p>
+                        <p class="price">₩${getRandomPrice()}</p>
                     </div>
                 `;
                 slider.appendChild(newCard);
@@ -410,8 +571,8 @@ function initSmoothScroll() {
 
 // 페이지 로드 시 초기화
 document.addEventListener('DOMContentLoaded', function() {
-    // Three.js 초기화
-    initThreeJS();
+    // 3D 캐러셀 초기화
+    window.carousel3D = new Carousel3D();
     
     // 색상 선택 기능 초기화
     initColorOptions();

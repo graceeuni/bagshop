@@ -87,17 +87,22 @@ body {
     color: #2c3e50;
 }
 
-/* MD 추천 상품 섹션 */
+/* MD 추천 상품 섹션 - 캐러셀 */
 .featured-section {
     padding: 4rem 0;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
 }
 
-.featured-product {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 4rem;
+.featured-carousel {
+    position: relative;
+    overflow: hidden;
+    border-radius: 20px;
+}
+
+.carousel-container {
+    position: relative;
+    display: flex;
     align-items: center;
     background: rgba(255,255,255,0.1);
     padding: 3rem;
@@ -105,17 +110,88 @@ body {
     backdrop-filter: blur(10px);
 }
 
-.product-3d {
+.carousel-wrapper {
     display: flex;
-    justify-content: center;
-    align-items: center;
+    transition: transform 0.5s ease;
+    width: 100%;
 }
 
-#threejs-container {
-    width: 400px;
-    height: 400px;
+.carousel-slide {
+    min-width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+    align-items: center;
+    opacity: 0;
+    transform: translateX(100px);
+    transition: all 0.5s ease;
+}
+
+.carousel-slide.active {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.carousel-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255,255,255,0.9);
+    border: none;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    z-index: 10;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    color: #764ba2;
+}
+
+.carousel-btn:hover {
+    background: #fff;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+    transform: translateY(-50%) scale(1.1);
+}
+
+.carousel-btn.prev-btn {
+    left: 20px;
+}
+
+.carousel-btn.next-btn {
+    right: 20px;
+}
+
+.carousel-indicators {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.5);
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.indicator.active {
+    background: white;
+    border-color: white;
+    transform: scale(1.2);
+}
+
+.threejs-container {
+    width: 500px;
+    height: 500px;
     border-radius: 15px;
     overflow: hidden;
+    background: rgba(255,255,255,0.05);
 }
 
 .product-info h3 {
@@ -342,15 +418,34 @@ body {
         display: none;
     }
     
-    .featured-product {
+    .carousel-slide {
         grid-template-columns: 1fr;
         gap: 2rem;
         padding: 2rem;
     }
     
-    #threejs-container {
-        width: 300px;
-        height: 300px;
+    .threejs-container {
+        width: 350px;
+        height: 350px;
+        margin: 0 auto;
+    }
+    
+    .carousel-container {
+        padding: 2rem;
+    }
+    
+    .carousel-btn {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
+    }
+    
+    .carousel-btn.prev-btn {
+        left: 10px;
+    }
+    
+    .carousel-btn.next-btn {
+        right: 10px;
     }
     
     .product-slider {
@@ -379,9 +474,13 @@ body {
         gap: 1rem;
     }
     
-    #threejs-container {
-        width: 250px;
-        height: 250px;
+    .threejs-container {
+        width: 300px;
+        height: 300px;
+    }
+    
+    .carousel-container {
+        padding: 1.5rem;
     }
     
     .product-card {
@@ -400,5 +499,19 @@ body {
     
     .next-btn {
         right: 10px;
+    }
+    
+    .carousel-btn {
+        width: 35px;
+        height: 35px;
+        font-size: 0.9rem;
+    }
+    
+    .carousel-btn.prev-btn {
+        left: 5px;
+    }
+    
+    .carousel-btn.next-btn {
+        right: 5px;
     }
 }
