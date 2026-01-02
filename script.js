@@ -339,35 +339,56 @@ class Carousel3D {
         if (models[modelName] && models[modelName].traverse) {
             models[modelName].traverse(function (child) {
                 if (child.isMesh && child.material) {
-                    // 메인 백팩 본체 색상 변경
-                    if (child.material.name && 
-                        (child.material.name.toLowerCase().includes('main') || 
-                         child.material.name.toLowerCase().includes('body') ||
-                         child.material.name.toLowerCase().includes('fabric'))) {
-                        
-                        if (Array.isArray(child.material)) {
-                            child.material.forEach(material => {
-                                material.color.set(color);
-                            });
-                        } else {
-                            child.material.color.set(color);
-                        }
-                    }
+                    // 재질 이름 확인 및 색상 변경
+                    const materialName = (child.material.name || '').toLowerCase();
                     
-                    // 포켓 색상 변경
-                    if (child.material.name && 
-                        child.material.name.toLowerCase().includes('pocket')) {
-                        
+                    // 가방 본체, 포켓, 패브릭 등 메인 부품만 색상 변경
+                    // 금속, 지퍼, 하드웨어 부품은 제외
+                    const isAccessory = materialName.includes('zipper') || 
+                                      materialName.includes('buckle') || 
+                                      materialName.includes('hardware') ||
+                                      materialName.includes('metal') ||
+                                      materialName.includes('strap') ||
+                                      materialName.includes('handle') ||
+                                      materialName.includes('button') ||
+                                      materialName.includes('clasp');
+                    
+                    // 메인 가방 부품에만 색상 적용
+                    if (!isAccessory) {
+                        // 재질 속성 강제 업데이트
                         if (Array.isArray(child.material)) {
                             child.material.forEach(material => {
                                 material.color.set(color);
+                                material.emissive = new THREE.Color(0x000000);
+                                material.emissiveIntensity = 0;
+                                material.metalness = 0.1;
+                                material.roughness = 0.8;
+                                material.needsUpdate = true;
                             });
                         } else {
                             child.material.color.set(color);
+                            child.material.emissive = new THREE.Color(0x000000);
+                            child.material.emissiveIntensity = 0;
+                            child.material.metalness = 0.1;
+                            child.material.roughness = 0.8;
+                            child.material.needsUpdate = true;
                         }
                     }
                 }
             });
+            
+            // 씬의 모든 객체를 강제로 업데이트
+            scenes[modelName].traverse(function (child) {
+                if (child.isMesh) {
+                    child.geometry.computeBoundingBox();
+                    child.geometry.computeBoundingSphere();
+                }
+            });
+            
+            // 즉시 렌더링 업데이트
+            if (renderers[modelName]) {
+                renderers[modelName].render(scenes[modelName], cameras[modelName]);
+            }
         }
     }
 }
@@ -456,9 +477,18 @@ function initColorOptions() {
             // 현재 버튼 활성화
             this.classList.add('active');
             
+            // 시각적 피드백 추가
+            this.style.transform = 'scale(1.2)';
+            setTimeout(() => {
+                this.style.transform = 'scale(1)';
+            }, 200);
+            
             // 해당 모델의 색상 변경
             if (window.carousel3D) {
                 window.carousel3D.changeModelColor(modelName, color);
+                
+                // 색상 변경 성공 피드백
+                console.log(`${modelName} 모델의 색상을 ${color}로 변경했습니다.`);
             }
         });
     });
